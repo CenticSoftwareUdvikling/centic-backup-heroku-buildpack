@@ -16,6 +16,7 @@ AWS_CLI_URL="https://s3.amazonaws.com/aws-cli/awscli-bundle.zip"
 # parse and derive params
 BUILD_DIR=$1
 CACHE_DIR=$2
+ENV_DIR=$3
 
 LP_DIR=`cd $(dirname $0); cd ..; pwd`
 BUILDPACK_DIR="$(dirname $(dirname $0))"
@@ -33,4 +34,26 @@ chmod +x $BUILD_DIR/.profile.d/install_awscli.sh
 rm -rf /tmp/awscli*
 
 echo "-----> aws cli installation done"
+
+echo "-----> Installing MySQL 5.6"
+BP_DIR=$(cd $(dirname ${0:-}); cd ..; pwd)
+
+mkdir -p $BUILD_DIR/.heroku/vendor
+curl https://codeload.github.com/raphjutras/mysql-binaries/tar.gz/master | tar zxv
+cp -R mysql-binaries-master/ $BUILD_DIR/.heroku/vendor/mysql/
+
+echo "Writing export file in $BP_DIR"
+
+echo "export PATH=\"\$PATH:$BUILD_DIR/.heroku/vendor/mysql/bin\"" > $BP_DIR/export
+echo "export LD_LIBRARY_PATH=\"\$LIBRARY_PATH:$BUILD_DIR/.heroku/vendor/mysql/lib\"" >> $BP_DIR/export
+echo "export LIBRARY_PATH=\"\$LIBRARY_PATH:$BUILD_DIR/.heroku/vendor/mysql/lib\"" >> $BP_DIR/export
+
+echo "Writing PATH to profile.d directory"
+
+mkdir -p $BUILD_DIR/.profile.d
+echo "export PATH=\$HOME/.heroku/vendor/mysql/bin:\$PATH" > $BUILD_DIR/.profile.d/mysql.sh
+echo "export LD_LIBRARY_PATH=\$LIBRARY_PATH:\$HOME/.heroku/vendor/mysql/lib" >> $BUILD_DIR/.profile.d/mysql.sh
+echo "export LIBRARY_PATH=\$LIBRARY_PATH:\$HOME/.heroku/vendor/mysql/lib" >> $BUILD_DIR/.profile.d/mysql.sh
+
+echo "-----> Finished MySQL buildpack installation"
 
