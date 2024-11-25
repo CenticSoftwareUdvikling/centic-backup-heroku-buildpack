@@ -1,59 +1,12 @@
-#!/usr/bin/env bash
-# bin/compile <build-dir> <cache-dir>
+#!/usr/bin/env ruby
 
-# fail fast
-set -e
+# sync output
+$stdout.sync = true
 
-# debug
-# set -x
+require_relative "../lib/build_pack"
 
-# clean up leaking environment
-unset GIT_DIR
+build_dir = ARGV[0]
+cache_dir = ARGV[1]
 
-# config
-AWS_CLI_URL="https://s3.amazonaws.com/aws-cli/awscli-bundle.zip"
-
-# parse and derive params
-BUILD_DIR=$1
-CACHE_DIR=$2
-ENV_DIR=$3
-
-LP_DIR=`cd $(dirname $0); cd ..; pwd`
-BUILDPACK_DIR="$(dirname $(dirname $0))"
-
-echo "-----> Fetching AWS CLI into slug"
-curl --progress-bar -o /tmp/awscli-bundle.zip $AWS_CLI_URL
-unzip -qq -d "$BUILD_DIR/vendor" /tmp/awscli-bundle.zip
-
-echo "-----> adding installer script into app/.profile.d"
-mkdir -p $BUILD_DIR/.profile.d
-cp "$BUILDPACK_DIR/bin/install_awscli.sh" $BUILD_DIR/.profile.d/
-chmod +x $BUILD_DIR/.profile.d/install_awscli.sh
-
-#cleaning up...
-rm -rf /tmp/awscli*
-
-echo "-----> aws cli installation done"
-
-echo "-----> Installing MySQL 5.6"
-BP_DIR=$(cd $(dirname ${0:-}); cd ..; pwd)
-
-mkdir -p $BUILD_DIR/.heroku/vendor
-curl https://codeload.github.com/raphjutras/mysql-binaries/tar.gz/master | tar zxv
-cp -R mysql-binaries-master/ $BUILD_DIR/.heroku/vendor/mysql/
-
-echo "Writing export file in $BP_DIR"
-
-echo "export PATH=\"\$PATH:$BUILD_DIR/.heroku/vendor/mysql/bin\"" > $BP_DIR/export
-echo "export LD_LIBRARY_PATH=\"\$LIBRARY_PATH:$BUILD_DIR/.heroku/vendor/mysql/lib\"" >> $BP_DIR/export
-echo "export LIBRARY_PATH=\"\$LIBRARY_PATH:$BUILD_DIR/.heroku/vendor/mysql/lib\"" >> $BP_DIR/export
-
-echo "Writing PATH to profile.d directory"
-
-mkdir -p $BUILD_DIR/.profile.d
-echo "export PATH=\$HOME/.heroku/vendor/mysql/bin:\$PATH" > $BUILD_DIR/.profile.d/mysql.sh
-echo "export LD_LIBRARY_PATH=\$LIBRARY_PATH:\$HOME/.heroku/vendor/mysql/lib" >> $BUILD_DIR/.profile.d/mysql.sh
-echo "export LIBRARY_PATH=\$LIBRARY_PATH:\$HOME/.heroku/vendor/mysql/lib" >> $BUILD_DIR/.profile.d/mysql.sh
-
-echo "-----> Finished MySQL buildpack installation"
+BuildPack.run(build_dir, cache_dir)
 
